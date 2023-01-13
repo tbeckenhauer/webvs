@@ -1,5 +1,4 @@
-import defaults from "lodash-es/defaults";
-import { Channels } from "../utils";
+import { AudioChannels } from "../utils";
 import AnalyserAdapter from "./AnalyserAdapter";
 
 interface IVisData {
@@ -50,13 +49,14 @@ export default class WebAudioAnalyser extends AnalyserAdapter {
      * Initializes a WebAudioAnalyser
      * @param options options for analyser
      */
-    constructor(options: IWebAudioAnalyserOpts) {
+    constructor(options: IWebAudioAnalyserOpts = {}) {
         super();
-        options = defaults(options || {}, {
+        options = {
             decay: 0.02,
             fftSize: 512,
             threshold: 0.125,
-        });
+            ...options,
+        };
 
         if (options.context) {
             this.context = options.context;
@@ -193,12 +193,12 @@ export default class WebAudioAnalyser extends AnalyserAdapter {
     }
 
     // Returns array of waveform values
-    public getWaveform(channel: Channels = Channels.CENTER) {
+    public getWaveform(channel: AudioChannels = AudioChannels.CENTER) {
         return this.visData[channel].waveform;
     }
 
     // Returns array of spectrum values
-    public getSpectrum(channel: Channels = Channels.CENTER) {
+    public getSpectrum(channel: AudioChannels = AudioChannels.CENTER) {
         return this.visData[channel].spectrum;
     }
 

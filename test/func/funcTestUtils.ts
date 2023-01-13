@@ -4,7 +4,7 @@ import AnalyserAdapter from "../../src/analyser/AnalyserAdapter";
 import Component from "../../src/Component";
 import IMain from "../../src/IMain";
 import Main from "../../src/Main";
-import { Channels, clamp, glslFloatRepr, noop } from "../../src/utils";
+import { AudioChannels, clamp, glslFloatRepr, noop } from "../../src/utils";
 import ShaderProgram from "../../src/webgl/ShaderProgram";
 
 export class MockAnalyser extends AnalyserAdapter {
@@ -31,10 +31,10 @@ export class MockAnalyser extends AnalyserAdapter {
     // tslint:disable-next-line:no-empty
     public update() {}
 
-    public getSpectrum(channel?: Channels) {
+    public getSpectrum(channel?: AudioChannels) {
         return this.sineData;
     }
-    public getWaveform(channel?: Channels) {
+    public getWaveform(channel?: AudioChannels) {
         return this.sineData;
     }
 }
@@ -135,6 +135,8 @@ function imageFuzzyOk(
     redPixel.data[3] = 255;
 
     let mismatch = 0;
+    let maxDistance = 0;
+    let mismatchDistanceSum = 0;
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
             const off = y * width * 4 + x * 4;
@@ -143,8 +145,10 @@ function imageFuzzyOk(
             const gd = expectPixels[off + 1] - sourcePixels[srcOff + 1];
             const bd = expectPixels[off + 2] - sourcePixels[srcOff + 2];
             const distance = rd * rd + gd * gd + bd * bd;
+            maxDistance = Math.max(distance, maxDistance);
             if (distance >= distanceThreshold) {
                 ctxt.putImageData(redPixel, x, y); // mark pixel mismatch
+                mismatchDistanceSum += distance;
                 mismatch++;
             }
         }
@@ -157,6 +161,8 @@ function imageFuzzyOk(
         const expectSrc = expectDataUrl;
         const outputSrc = canvas.toDataURL();
         const diffSrc = tempCanvas.toDataURL();
+        const averageMismatchDistance = Math.sqrt(mismatchDistanceSum / (mismatch * 3));
+        maxDistance = Math.sqrt(maxDistance / 3);
         errorElement.innerHTML = `
             <table style='border:1px solid black;margin:5px;font-family:sans-serif;text-align:center;'>
               <tr>
@@ -175,7 +181,15 @@ function imageFuzzyOk(
             </table>
         `;
         document.body.appendChild(errorElement);
-        throw new Error("ImageMismatch #" + errorId);
+        throw new Error([
+            `ImageMismatch #${errorId}`,
+            `maxDistance: ${maxDistance}`,
+            `averageMismatchDistance: ${averageMismatchDistance}`,
+            `mismatch: ${mismatch}`,
+            `ImageMismatch #${errorId}`,
+            `outputSrc: ${outputSrc}`,
+            `diffSrc: #${diffSrc}`,
+        ].join("\n"));
     }
 }
 
